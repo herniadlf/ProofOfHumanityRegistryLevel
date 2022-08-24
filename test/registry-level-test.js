@@ -65,10 +65,10 @@ describe('Registry Level Contract', function() {
 
     describe('Act as Proxy with a valid Proof Of Humanity contract', function(){
 
-        let registryLevelContract, pohContract;
+        let registryLevelContract, pohContract, pohContractFactory;
 
         beforeEach(async function(){
-            const pohContractFactory = await ethers.getContractFactory('PoHMock');
+            pohContractFactory = await ethers.getContractFactory('PoHMock');
             pohContract = await pohContractFactory.deploy();
             await pohContract.deployed();
             
@@ -81,6 +81,18 @@ describe('Registry Level Contract', function() {
 
             expect(await pohContract.isRegistered(userOne.address)).to.equal(true);
             expect(await registryLevelContract.isRegistered(userOne.address)).to.equal(true);
+            expect(await pohContract.isRegistered(userTwo.address)).to.equal(false);
+            expect(await registryLevelContract.isRegistered(userTwo.address)).to.equal(false);
+        });
+
+        it('should be the another registry if there is a changeProofOfHumanity transaction first', async function() {
+            await pohContract.connect(userOne).addSubmission();
+            const secondPoHContract = await pohContractFactory.deploy();
+            await secondPoHContract.deployed();
+            await registryLevelContract.changeProofOfHumanity(secondPoHContract.address);
+            expect(await pohContract.isRegistered(userOne.address)).to.equal(true);
+            expect(await secondPoHContract.isRegistered(userOne.address)).to.equal(false);
+            expect(await registryLevelContract.isRegistered(userOne.address)).to.equal(false);
         });
     });
 
