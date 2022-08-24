@@ -63,7 +63,7 @@ describe('Registry Level Contract', function() {
         });
     });
 
-    describe.skip('Act as Proxy with a valid Proof Of Humanity contract', function(){
+    describe('Act as Proxy with a valid Proof Of Humanity contract', function(){
 
         let registryLevelContract, pohContract;
 
@@ -72,12 +72,15 @@ describe('Registry Level Contract', function() {
             pohContract = await pohContractFactory.deploy();
             await pohContract.deployed();
             
-            registryLevelContract = await contractFactory.deploy(pohContract.getAddress());
+            registryLevelContract = await contractFactory.deploy(pohContract.address);
             await registryLevelContract.deployed()
         });
 
-        it('should be no one registered', async function() {
-            expect(true).to.be.eq(true);
+        it('should be the same registry asking through the proxy', async function() {
+            await pohContract.connect(userOne).addSubmission();
+
+            expect(await pohContract.isRegistered(userOne.address)).to.equal(true);
+            expect(await registryLevelContract.isRegistered(userOne.address)).to.equal(true);
         });
     });
 

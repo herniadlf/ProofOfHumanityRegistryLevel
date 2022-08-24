@@ -13,7 +13,7 @@ pragma solidity ^0.8.10;
 import "./interfaces/IProofOfHumanity.sol";
 import "./libraries/Errors.sol";
 
-contract RegistryLevel {
+contract RegistryLevel is IProofOfHumanity {
     /* Structs */
     /* Storage */
     address public proofOfHumanity;
@@ -29,8 +29,19 @@ contract RegistryLevel {
     }
 
     /* External and public */
+
+    /** @dev
+     * @param _newProofOfHumanity Change for another implementation of ProofOfHumanity. It should follow the IProofOfHumanity interface.
+     */
     function changeProofOfHumanity(address _newProofOfHumanity) external {
         proofOfHumanity = _newProofOfHumanity;
+    }
+
+    /** @dev
+     * @inheritdoc IProofOfHumanity
+     */
+    function isRegistered(address _submissionID) external view returns (bool){
+        return IProofOfHumanity(proofOfHumanity).isRegistered(_submissionID);
     }
 
 }
