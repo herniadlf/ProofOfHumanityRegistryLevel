@@ -24,7 +24,7 @@ contract RegistryLevel {
      * @param _proofOfHumanity The ProofOfHumanity contract, the base contract for the RegistryLevel
     */
     constructor(address _proofOfHumanity) {
-        if (proofOfHumanity == address(0)) revert Errors.InitParamsInvalid();
+        if (_proofOfHumanity == address(0)) revert Errors.InitParamsInvalid();
         proofOfHumanity = _proofOfHumanity;
     }
 
