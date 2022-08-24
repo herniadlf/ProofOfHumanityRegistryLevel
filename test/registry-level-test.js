@@ -30,5 +30,55 @@ describe('Registry Level Contract', function() {
         });
     });
 
+    describe('Change Proof Of Humanity', function(){
+
+        let registryLevelContract, firstPoHContract, secondPoHContract;
+
+        beforeEach(async function(){
+            const pohContractFactory = await ethers.getContractFactory('PoHMock');
+            firstPoHContract = await pohContractFactory.deploy();
+            await firstPoHContract.deployed();
+
+            secondPoHContract = await pohContractFactory.deploy();
+            await secondPoHContract.deployed();
+        });
+
+        it('ProofOfHumanity should be the first contract', async function() {
+            registryLevelContract = await contractFactory.deploy(firstPoHContract.address);
+            await registryLevelContract.deployed()
+
+            const proofOfHumanity = await registryLevelContract.proofOfHumanity();
+
+            expect(proofOfHumanity).to.be.eq(firstPoHContract.address);
+        });
+
+        it('ProofOfHumanity should change to the second contract', async function() {
+            registryLevelContract = await contractFactory.deploy(firstPoHContract.address);
+            await registryLevelContract.deployed()
+
+            await registryLevelContract.changeProofOfHumanity(secondPoHContract.address);
+            const proofOfHumanity = await registryLevelContract.proofOfHumanity();
+
+            expect(proofOfHumanity).to.be.eq(secondPoHContract.address);
+        });
+    });
+
+    describe.skip('Act as Proxy with a valid Proof Of Humanity contract', function(){
+
+        let registryLevelContract, pohContract;
+
+        beforeEach(async function(){
+            const pohContractFactory = await ethers.getContractFactory('PoHMock');
+            pohContract = await pohContractFactory.deploy();
+            await pohContract.deployed();
+            
+            registryLevelContract = await contractFactory.deploy(pohContract.getAddress());
+            await registryLevelContract.deployed()
+        });
+
+        it('should be no one registered', async function() {
+            expect(true).to.be.eq(true);
+        });
+    });
 
 });
