@@ -30,6 +30,30 @@ describe('Registry Level Contract', function() {
         });
     });
 
+    describe('Change Governor', function(){
+
+        let registryLevelContract;
+
+        beforeEach(async function(){
+            const pohContractFactory = await ethers.getContractFactory('PoHMock');
+            const pohContract = await pohContractFactory.deploy();
+            await pohContract.deployed();
+            
+            registryLevelContract = await contractFactory.deploy(pohContract.address);
+            await registryLevelContract.deployed()
+        });
+
+        it('should fail to change the contract governor', async function() {
+            await expect(registryLevelContract.connect(userOne).changeGovernor(userOne.address))
+                .to.be.revertedWith(ERRORS.ONLY_GOVERNOR_TRANSACTION);
+        });
+
+        it('should change the contract governor ok', async function() {
+            await expect(registryLevelContract.changeGovernor(userOne.address)).to.not.be.reverted;
+        });
+
+    });
+
     describe('Change Proof Of Humanity', function(){
 
         let registryLevelContract, firstPoHContract, secondPoHContract;
