@@ -84,8 +84,7 @@ contract RegistryLevel is IProofOfHumanity {
     }
 
     /** @dev 
-     * To be "registered" means that you are not registered in any side registry and you 
-     * @inheritdoc IProofOfHumanity
+     * To be "registered" means that you are registered in the PoH base registry AND you aren't registered in any side registry 
      */
     function isRegistered(address _submissionID) external view returns (bool){
         bool isRegisteredOnASideRegistry = false;
