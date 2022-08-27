@@ -17,7 +17,7 @@ describe('Registry Level Contract', function() {
         userThree = accounts[4];
     });
 
-    describe('Deployment', function(){
+    describe('Deployment', function() {
         it('should fail for invalid address', async function() {
             const deployTx = contractFactory.deploy(ethers.constants.AddressZero);
             await expect(deployTx).to.be.revertedWith(ERRORS.INIT_PARAMS_INVALID);
@@ -30,7 +30,7 @@ describe('Registry Level Contract', function() {
         });
     });
 
-    describe('Change Governor', function(){
+    describe('Change Governor', function() {
 
         let registryLevelContract;
 
@@ -49,12 +49,13 @@ describe('Registry Level Contract', function() {
         });
 
         it('should change the contract governor ok', async function() {
-            await expect(registryLevelContract.changeGovernor(userOne.address)).to.not.be.reverted;
+            const tx = await registryLevelContract.changeGovernor(userOne.address);
+            await expect(tx).to.emit(registryLevelContract, 'GovernorChanged').withArgs(userOne.address);
         });
 
     });
 
-    describe('Change Proof Of Humanity', function(){
+    describe('Change Proof Of Humanity', function() {
 
         let registryLevelContract, firstPoHContract, secondPoHContract;
 
@@ -80,14 +81,15 @@ describe('Registry Level Contract', function() {
             registryLevelContract = await contractFactory.deploy(firstPoHContract.address);
             await registryLevelContract.deployed()
 
-            await registryLevelContract.changeProofOfHumanity(secondPoHContract.address);
+            const tx = await registryLevelContract.changeProofOfHumanity(secondPoHContract.address);
             const proofOfHumanity = await registryLevelContract.proofOfHumanity();
-
+            
+            await expect(tx).to.emit(registryLevelContract, 'ProofOfHumanityChanged').withArgs(secondPoHContract.address);
             expect(proofOfHumanity).to.be.eq(secondPoHContract.address);
         });
     });
 
-    describe('Act as Proxy with a valid Proof Of Humanity contract', function(){
+    describe('Act as Proxy with a valid Proof Of Humanity contract', function() {
 
         let registryLevelContract, pohContract, pohContractFactory;
 
@@ -119,5 +121,28 @@ describe('Registry Level Contract', function() {
             expect(await registryLevelContract.isRegistered(userOne.address)).to.equal(false);
         });
     });
+
+    describe('Registry level with one side registry', function() {
+
+        let registryLevelContract, pohMainContract, pohSideContract, pohContractFactory;
+
+        beforeEach(async function(){
+            pohContractFactory = await ethers.getContractFactory('PoHMock');
+            pohMainContract = await pohContractFactory.deploy();
+            await pohMainContract.deployed();
+
+            pohSideContract = await pohContractFactory.deploy();
+            await pohSideContract.deployed();
+            
+            registryLevelContract = await contractFactory.deploy(pohMainContract.address);
+            await registryLevelContract.deployed()
+        });
+
+        it('should add a sideRegistry ok', async function() {
+            const tx = await registryLevelContract.addSideRegistry(pohSideContract.address);
+            
+            await expect(tx).to.emit(registryLevelContract, 'SideRegistryAdded').withArgs(pohSideContract.address);
+        });
+    })
 
 });
