@@ -16,7 +16,7 @@ contract PoHMock is IProofOfHumanity {
 
     mapping(address => bool) fakeRegistry;
 
-    function addSubmission() external {
+    function addSubmission(string calldata, string calldata) external{
         fakeRegistry[msg.sender] = true;
     }
 

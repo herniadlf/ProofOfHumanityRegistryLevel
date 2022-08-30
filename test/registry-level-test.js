@@ -3,12 +3,12 @@ const { ethers } = require('hardhat');
 const ERRORS = require('./helpers/errors');
 
 
-describe('Registry Level Contract', function() {
+describe('Proof Of Humanity Proxy Contract', function() {
 
     let contractFactory, ethersProvider, deployer, userOne, userTwo, userThree;
 
     beforeEach(async function() {
-        contractFactory = await ethers.getContractFactory('RegistryLevel');
+        contractFactory = await ethers.getContractFactory('ProofOfHumanityProxy');
         accounts = await ethers.getSigners();
         ethersProvider = ethers.provider;
         deployer = accounts[0];
@@ -32,32 +32,32 @@ describe('Registry Level Contract', function() {
 
     describe('Change Governor', function() {
 
-        let registryLevelContract;
+        let proofOfHumanityProxyContract;
 
         beforeEach(async function(){
             const pohContractFactory = await ethers.getContractFactory('PoHMock');
             const pohContract = await pohContractFactory.deploy();
             await pohContract.deployed();
             
-            registryLevelContract = await contractFactory.deploy(pohContract.address);
-            await registryLevelContract.deployed()
+            proofOfHumanityProxyContract = await contractFactory.deploy(pohContract.address);
+            await proofOfHumanityProxyContract.deployed()
         });
 
         it('should fail to change the contract governor', async function() {
-            await expect(registryLevelContract.connect(userOne).changeGovernor(userOne.address))
+            await expect(proofOfHumanityProxyContract.connect(userOne).changeGovernor(userOne.address))
                 .to.be.revertedWith(ERRORS.ONLY_GOVERNOR_TRANSACTION);
         });
 
         it('should change the contract governor ok', async function() {
-            const tx = await registryLevelContract.changeGovernor(userOne.address);
-            await expect(tx).to.emit(registryLevelContract, 'GovernorChanged').withArgs(userOne.address);
+            const tx = await proofOfHumanityProxyContract.changeGovernor(userOne.address);
+            await expect(tx).to.emit(proofOfHumanityProxyContract, 'GovernorChanged').withArgs(userOne.address);
         });
 
     });
 
     describe('Change Proof Of Humanity', function() {
 
-        let registryLevelContract, firstPoHContract, secondPoHContract;
+        let proofOfHumanityProxyContract, firstPoHContract, secondPoHContract;
 
         beforeEach(async function(){
             const pohContractFactory = await ethers.getContractFactory('PoHMock');
@@ -69,62 +69,62 @@ describe('Registry Level Contract', function() {
         });
 
         it('ProofOfHumanity should be the first contract', async function() {
-            registryLevelContract = await contractFactory.deploy(firstPoHContract.address);
-            await registryLevelContract.deployed()
+            proofOfHumanityProxyContract = await contractFactory.deploy(firstPoHContract.address);
+            await proofOfHumanityProxyContract.deployed()
 
-            const proofOfHumanity = await registryLevelContract.proofOfHumanity();
+            const proofOfHumanity = await proofOfHumanityProxyContract.proofOfHumanity();
 
             expect(proofOfHumanity).to.be.eq(firstPoHContract.address);
         });
 
         it('ProofOfHumanity should change to the second contract', async function() {
-            registryLevelContract = await contractFactory.deploy(firstPoHContract.address);
-            await registryLevelContract.deployed()
+            proofOfHumanityProxyContract = await contractFactory.deploy(firstPoHContract.address);
+            await proofOfHumanityProxyContract.deployed()
 
-            const tx = await registryLevelContract.changeProofOfHumanity(secondPoHContract.address);
-            const proofOfHumanity = await registryLevelContract.proofOfHumanity();
+            const tx = await proofOfHumanityProxyContract.changeProofOfHumanity(secondPoHContract.address);
+            const proofOfHumanity = await proofOfHumanityProxyContract.proofOfHumanity();
             
-            await expect(tx).to.emit(registryLevelContract, 'ProofOfHumanityChanged').withArgs(secondPoHContract.address);
+            await expect(tx).to.emit(proofOfHumanityProxyContract, 'ProofOfHumanityChanged').withArgs(secondPoHContract.address);
             expect(proofOfHumanity).to.be.eq(secondPoHContract.address);
         });
     });
 
     describe('Act as Proxy with a valid Proof Of Humanity contract', function() {
 
-        let registryLevelContract, pohContract, pohContractFactory;
+        let proofOfHumanityProxyContract, pohContract, pohContractFactory;
 
         beforeEach(async function(){
             pohContractFactory = await ethers.getContractFactory('PoHMock');
             pohContract = await pohContractFactory.deploy();
             await pohContract.deployed();
             
-            registryLevelContract = await contractFactory.deploy(pohContract.address);
-            await registryLevelContract.deployed()
+            proofOfHumanityProxyContract = await contractFactory.deploy(pohContract.address);
+            await proofOfHumanityProxyContract.deployed()
         });
 
         it('should be the same registry asking through the proxy', async function() {
-            await pohContract.connect(userOne).addSubmission();
+            await pohContract.connect(userOne).addSubmission('evidence', 'name');
 
             expect(await pohContract.isRegistered(userOne.address)).to.equal(true);
-            expect(await registryLevelContract.isRegistered(userOne.address)).to.equal(true);
+            expect(await proofOfHumanityProxyContract.isRegistered(userOne.address)).to.equal(true);
             expect(await pohContract.isRegistered(userTwo.address)).to.equal(false);
-            expect(await registryLevelContract.isRegistered(userTwo.address)).to.equal(false);
+            expect(await proofOfHumanityProxyContract.isRegistered(userTwo.address)).to.equal(false);
         });
 
         it('should be the another registry if there is a changeProofOfHumanity transaction first', async function() {
-            await pohContract.connect(userOne).addSubmission();
+            await pohContract.connect(userOne).addSubmission('evidence', 'name');
             const secondPoHContract = await pohContractFactory.deploy();
             await secondPoHContract.deployed();
-            await registryLevelContract.changeProofOfHumanity(secondPoHContract.address);
+            await proofOfHumanityProxyContract.changeProofOfHumanity(secondPoHContract.address);
             expect(await pohContract.isRegistered(userOne.address)).to.equal(true);
             expect(await secondPoHContract.isRegistered(userOne.address)).to.equal(false);
-            expect(await registryLevelContract.isRegistered(userOne.address)).to.equal(false);
+            expect(await proofOfHumanityProxyContract.isRegistered(userOne.address)).to.equal(false);
         });
     });
 
-    describe('Registry level with one side registry', function() {
+    describe('Add one side registry', function() {
 
-        let registryLevelContract, pohMainContract, pohSideContract, pohContractFactory;
+        let proofOfHumanityProxyContract, pohMainContract, pohSideContract, pohContractFactory;
 
         beforeEach(async function(){
             pohContractFactory = await ethers.getContractFactory('PoHMock');
@@ -134,14 +134,28 @@ describe('Registry Level Contract', function() {
             pohSideContract = await pohContractFactory.deploy();
             await pohSideContract.deployed();
             
-            registryLevelContract = await contractFactory.deploy(pohMainContract.address);
-            await registryLevelContract.deployed()
+            proofOfHumanityProxyContract = await contractFactory.deploy(pohMainContract.address);
+            await proofOfHumanityProxyContract.deployed()
         });
 
         it('should add a sideRegistry ok', async function() {
-            const tx = await registryLevelContract.addSideRegistry(pohSideContract.address);
+            const tx = await proofOfHumanityProxyContract.addSideRegistry(pohSideContract.address);
             
-            await expect(tx).to.emit(registryLevelContract, 'SideRegistryAdded').withArgs(pohSideContract.address);
+            await expect(tx).to.emit(proofOfHumanityProxyContract, 'SideRegistryAdded').withArgs(pohSideContract.address);
+        });
+        
+        describe('With one side registry mocked always OK added', async function() {
+            beforeEach(async function() {
+                await proofOfHumanityProxyContract.addSideRegistry(pohSideContract.address);
+            });
+            
+            it('should forward a submission to the side registry', async function() {
+                const tx = await proofOfHumanityProxyContract.connect(userOne)
+                                    .addSideRegistrySubmission(pohSideContract.address, 'evidence', 'name');
+                
+                await expect(tx).to.emit(proofOfHumanityProxyContract, 'SideRegistrySubmissionAdded')
+                    .withArgs(pohSideContract.address, userOne.address);
+            });
         });
     })
 
