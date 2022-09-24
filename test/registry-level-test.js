@@ -5,12 +5,13 @@ const ERRORS = require('./helpers/errors');
 
 describe('Proof Of Humanity Proxy Contract', function() {
 
-    let contractFactory, ethersProvider, deployer, userOne, userTwo, userThree;
+    let contractFactory, provider, deployer, userOne, userTwo, userThree;
 
     beforeEach(async function() {
         contractFactory = await ethers.getContractFactory('ProofOfHumanityProxy');
+        
         accounts = await ethers.getSigners();
-        ethersProvider = ethers.provider;
+        provider = ethers.provider;
         deployer = accounts[0];
         userOne = accounts[1];
         userTwo = accounts[2];
@@ -18,13 +19,8 @@ describe('Proof Of Humanity Proxy Contract', function() {
     });
 
     describe('Deployment', function() {
-        it('should fail for invalid address', async function() {
-            const deployTx = contractFactory.deploy(ethers.constants.AddressZero);
-            await expect(deployTx).to.be.revertedWith(ERRORS.INIT_PARAMS_INVALID);
-        });
-
-        it('should work for a valid address', async function() {
-            const deployTx = await contractFactory.deploy(userOne.getAddress());
+        it('should work for valid addresses', async function() {
+            const deployTx = await contractFactory.deploy(userOne.getAddress(), userTwo.getAddress());
     
             expect(deployTx.deployed()).to.not.be.reverted;
         });
@@ -39,7 +35,7 @@ describe('Proof Of Humanity Proxy Contract', function() {
             const pohContract = await pohContractFactory.deploy();
             await pohContract.deployed();
             
-            proofOfHumanityProxyContract = await contractFactory.deploy(pohContract.address);
+            proofOfHumanityProxyContract = await contractFactory.deploy(pohContract.address, pohContract.address);
             await proofOfHumanityProxyContract.deployed()
         });
 
@@ -57,7 +53,7 @@ describe('Proof Of Humanity Proxy Contract', function() {
 
     describe('Change Proof Of Humanity', function() {
 
-        let proofOfHumanityProxyContract, firstPoHContract, secondPoHContract;
+        let proofOfHumanityProxyContract, firstPoHContract, secondPoHContract, thirdPohContract;
 
         beforeEach(async function(){
             const pohContractFactory = await ethers.getContractFactory('PoHMock');
@@ -66,96 +62,114 @@ describe('Proof Of Humanity Proxy Contract', function() {
 
             secondPoHContract = await pohContractFactory.deploy();
             await secondPoHContract.deployed();
+
+            thirdPohContract = await pohContractFactory.deploy();
+            await thirdPohContract.deployed();
+
+            proofOfHumanityProxyContract = await contractFactory.deploy(firstPoHContract.address, secondPoHContract.address);
+            await proofOfHumanityProxyContract.deployed()
         });
 
-        it('ProofOfHumanity should be the first contract', async function() {
-            proofOfHumanityProxyContract = await contractFactory.deploy(firstPoHContract.address);
-            await proofOfHumanityProxyContract.deployed()
-
-            const proofOfHumanity = await proofOfHumanityProxyContract.proofOfHumanity();
-
-            expect(proofOfHumanity).to.be.eq(firstPoHContract.address);
-        });
-
-        it('ProofOfHumanity should change to the second contract', async function() {
-            proofOfHumanityProxyContract = await contractFactory.deploy(firstPoHContract.address);
-            await proofOfHumanityProxyContract.deployed()
-
-            const tx = await proofOfHumanityProxyContract.changeProofOfHumanity(secondPoHContract.address);
-            const proofOfHumanity = await proofOfHumanityProxyContract.proofOfHumanity();
+        it('ProofOfHumanity core should change to the third contract', async function() {
+            const tx = await proofOfHumanityProxyContract.changeProofOfHumanityCore(thirdPohContract.address);
+            const proofOfHumanityCore = await proofOfHumanityProxyContract.proofOfHumanityCore();
             
-            await expect(tx).to.emit(proofOfHumanityProxyContract, 'ProofOfHumanityChanged').withArgs(secondPoHContract.address);
-            expect(proofOfHumanity).to.be.eq(secondPoHContract.address);
+            await expect(tx).to.emit(proofOfHumanityProxyContract, 'ProofOfHumanityCoreChanged').withArgs(thirdPohContract.address);
+            expect(proofOfHumanityCore).to.be.eq(thirdPohContract.address);
+        });
+
+        it('ProofOfHumanity soft should change to the third contract', async function() {
+            const tx = await proofOfHumanityProxyContract.changeProofOfHumanitySoft(thirdPohContract.address);
+            const proofOfHumanitySoft = await proofOfHumanityProxyContract.proofOfHumanitySoft();
+            
+            await expect(tx).to.emit(proofOfHumanityProxyContract, 'ProofOfHumanitySoftChanged').withArgs(thirdPohContract.address);
+            expect(proofOfHumanitySoft).to.be.eq(thirdPohContract.address);
+        });
+
+        it('should fail becase the sender is not the governor change to the third contract', async function() {
+            await expect(proofOfHumanityProxyContract.connect(userOne).changeProofOfHumanityCore(thirdPohContract.address))
+                .to.be.revertedWith(ERRORS.ONLY_GOVERNOR_TRANSACTION);
+                await expect(proofOfHumanityProxyContract.connect(userOne).changeProofOfHumanitySoft(thirdPohContract.address))
+                .to.be.revertedWith(ERRORS.ONLY_GOVERNOR_TRANSACTION);
         });
     });
 
     describe('Act as Proxy with a valid Proof Of Humanity contract', function() {
 
-        let proofOfHumanityProxyContract, pohContract, pohContractFactory;
+        let proofOfHumanityProxyContract, pohCoreContract, pohSoftContract, pohContractFactory;
 
         beforeEach(async function(){
             pohContractFactory = await ethers.getContractFactory('PoHMock');
-            pohContract = await pohContractFactory.deploy();
-            await pohContract.deployed();
+            pohCoreContract = await pohContractFactory.deploy();
+            await pohCoreContract.deployed();
+            pohSoftContract = await pohContractFactory.deploy();
+            await pohSoftContract.deployed();
             
-            proofOfHumanityProxyContract = await contractFactory.deploy(pohContract.address);
+            proofOfHumanityProxyContract = await contractFactory.deploy(pohCoreContract.address, pohSoftContract.address);
             await proofOfHumanityProxyContract.deployed()
         });
 
         it('should be the same registry asking through the proxy', async function() {
-            await pohContract.connect(userOne).addSubmission('evidence', 'name');
+            await pohCoreContract.connect(userOne).addSubmission('evidence', 'name');
 
-            expect(await pohContract.isRegistered(userOne.address)).to.equal(true);
+            expect(await pohCoreContract.isRegistered(userOne.address)).to.equal(true);
             expect(await proofOfHumanityProxyContract.isRegistered(userOne.address)).to.equal(true);
-            expect(await pohContract.isRegistered(userTwo.address)).to.equal(false);
+            expect(await pohSoftContract.isRegistered(userOne.address)).to.equal(false);
+            expect(await pohCoreContract.isRegistered(userTwo.address)).to.equal(false);
             expect(await proofOfHumanityProxyContract.isRegistered(userTwo.address)).to.equal(false);
         });
 
         it('should be the another registry if there is a changeProofOfHumanity transaction first', async function() {
-            await pohContract.connect(userOne).addSubmission('evidence', 'name');
-            const secondPoHContract = await pohContractFactory.deploy();
-            await secondPoHContract.deployed();
-            await proofOfHumanityProxyContract.changeProofOfHumanity(secondPoHContract.address);
-            expect(await pohContract.isRegistered(userOne.address)).to.equal(true);
-            expect(await secondPoHContract.isRegistered(userOne.address)).to.equal(false);
+            await pohCoreContract.connect(userOne).addSubmission('evidence', 'name');
+            const anotherPoHCoreContract = await pohContractFactory.deploy();
+            await anotherPoHCoreContract.deployed();
+            await proofOfHumanityProxyContract.changeProofOfHumanityCore(anotherPoHCoreContract.address);
+            expect(await pohCoreContract.isRegistered(userOne.address)).to.equal(true);
+            expect(await anotherPoHCoreContract.isRegistered(userOne.address)).to.equal(false);
             expect(await proofOfHumanityProxyContract.isRegistered(userOne.address)).to.equal(false);
         });
     });
 
-    describe('Add one side registry', function() {
+    describe('Act as proxy with submissions on soft contract', function() {
 
-        let proofOfHumanityProxyContract, pohMainContract, pohSideContract, pohContractFactory;
+        let proofOfHumanityProxyContract, pohCoreContract, pohSoftContract, pohContractFactory;
 
         beforeEach(async function(){
             pohContractFactory = await ethers.getContractFactory('PoHMock');
-            pohMainContract = await pohContractFactory.deploy();
-            await pohMainContract.deployed();
-
-            pohSideContract = await pohContractFactory.deploy();
-            await pohSideContract.deployed();
+            pohCoreContract = await pohContractFactory.deploy();
+            await pohCoreContract.deployed();
+            pohSoftContract = await pohContractFactory.deploy();
+            await pohSoftContract.deployed();
             
-            proofOfHumanityProxyContract = await contractFactory.deploy(pohMainContract.address);
+            proofOfHumanityProxyContract = await contractFactory.deploy(pohCoreContract.address, pohSoftContract.address);
             await proofOfHumanityProxyContract.deployed()
         });
 
-        it('should add a sideRegistry ok', async function() {
-            const tx = await proofOfHumanityProxyContract.addSideRegistry(pohSideContract.address);
-            
-            await expect(tx).to.emit(proofOfHumanityProxyContract, 'SideRegistryAdded').withArgs(pohSideContract.address);
+        it('isRegistered should return false if the submissions is in the soft registry', async function() {
+            await pohSoftContract.connect(userOne).addSubmission('evidence', 'name');
+
+            expect(await pohCoreContract.isRegistered(userOne.address)).to.equal(false);
+            expect(await pohSoftContract.isRegistered(userOne.address)).to.equal(true);
+            expect(await proofOfHumanityProxyContract.isRegistered(userOne.address)).to.equal(false);
         });
-        
-        describe('With one side registry mocked always OK added', async function() {
-            beforeEach(async function() {
-                await proofOfHumanityProxyContract.addSideRegistry(pohSideContract.address);
-            });
-            
-            it('should forward a submission to the side registry', async function() {
-                const tx = await proofOfHumanityProxyContract.connect(userOne)
-                                    .addSideRegistrySubmission(pohSideContract.address, 'evidence', 'name');
-                
-                await expect(tx).to.emit(proofOfHumanityProxyContract, 'SideRegistrySubmissionAdded')
-                    .withArgs(pohSideContract.address, userOne.address);
-            });
+
+        it('isRegistered should return false although it in the core registry', async function() {
+            await pohSoftContract.connect(userOne).addSubmission('evidence', 'name');
+            expect(await proofOfHumanityProxyContract.isRegistered(userOne.address)).to.equal(false);
+            await pohCoreContract.connect(userOne).addSubmission('evidence', 'name');
+            expect(await pohCoreContract.isRegistered(userOne.address)).to.equal(true);
+            expect(await proofOfHumanityProxyContract.isRegistered(userOne.address)).to.equal(false);
+        });
+
+        it('isSoftRegistered should return true if its in both registries', async function() {
+            await pohSoftContract.connect(userOne).addSubmission('evidence', 'name');
+            await pohCoreContract.connect(userOne).addSubmission('evidence', 'name');
+            expect(await proofOfHumanityProxyContract.isSoftRegistered(userOne.address)).to.equal(true);
+        });
+
+        it('isSoftRegistered should return false if its in the soft registry alone', async function() {
+            await pohSoftContract.connect(userOne).addSubmission('evidence', 'name');
+            expect(await proofOfHumanityProxyContract.isSoftRegistered(userOne.address)).to.equal(false);
         });
     })
 
