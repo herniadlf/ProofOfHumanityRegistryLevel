@@ -13,12 +13,12 @@ pragma solidity ^0.8.10;
 import "./interfaces/IProofOfHumanity.sol";
 import "./libraries/Errors.sol";
 
-contract ProofOfHumanityProxy {
-    /* Structs */
+contract ProofOfHumanityLevel {
+    
     /* Storage */
-    IProofOfHumanity public proofOfHumanityCore; // The address with ProofOfHumanity registry core in which ProofOfHumanityProxy relies on. The strictest implementation.
+    IProofOfHumanity public proofOfHumanityCore; // The address with ProofOfHumanity registry core in which ProofOfHumanityLevel relies on. The strictest implementation.
     IProofOfHumanity public proofOfHumanitySoft; // The address with ProofOfHumanity soft registry, a simple and more inclusive implementation.
-    address public governor; // The address that can invoke some governance changes in ProofOfHumanityProxy.
+    address public governor; // The address that can invoke some governance changes in ProofOfHumanityLevel.
     
     /* Events */
     
@@ -45,7 +45,7 @@ contract ProofOfHumanityProxy {
     }
 
     /** @dev constructor
-     * @param _proofOfHumanityCore The core ProofOfHumanity contract, the base contract for the ProofOfHumanityProxy.
+     * @param _proofOfHumanityCore The core ProofOfHumanity contract, the base contract for the ProofOfHumanityLevel.
      * @param _proofOfHumanitySoft The soft ProofOfHumanity contract.
     */
     constructor(IProofOfHumanity _proofOfHumanityCore, IProofOfHumanity _proofOfHumanitySoft) {
