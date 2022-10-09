@@ -13,15 +13,15 @@ The PoH v1 or PoH v2 contracts are supposed to be that "base contract" or "core 
 The actual implementation on ProofOfHumanityLevel contract:
 
 ```
-    /** @dev 
-     * To be "registered" means that you are registered in the PoH core registry AND you aren't registered in the soft registry 
+    /** @dev
+     * To be "registered" means that you are registered in the PoH core registry AND you aren't registered in the soft registry
      */
     function isRegistered(address _submissionID) external view returns (bool){
         return !proofOfHumanitySoft.isRegistered(_submissionID) && proofOfHumanityCore.isRegistered(_submissionID);
     }
 
-    /** @dev 
-     * To be "soft registered" means that you are registered in the PoH core registry AND you are in the soft registry 
+    /** @dev
+     * To be "soft registered" means that you are registered in the PoH core registry AND you are in the soft registry
      */
     function isSoftRegistered(address _submissionID) external view returns (bool){
         return proofOfHumanitySoft.isRegistered(_submissionID) && proofOfHumanityCore.isRegistered(_submissionID);

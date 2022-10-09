@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: UNLICENSED
+//SPDX-License-Identifier: MIT
 /**
  * @author: [@herniadlf]
  *  @reviewers: []
@@ -11,11 +11,10 @@
 pragma solidity ^0.8.10;
 
 contract ProofOfHumanitySoft {
-
     /* Errors */
     error AccountAlreadyRegistered();
-    
-    /* Structs */ 
+
+    /* Structs */
     struct SoftRegistry {
         address managedBy;
         bool isRegistered;
@@ -35,7 +34,7 @@ contract ProofOfHumanitySoft {
         return softRegistry[_submissionID].isRegistered;
     }
 
-    /** @dev Make a request to add a new entry to the list. 
+    /** @dev Make a request to add a new entry to the list.
      *  @param _accountInControl The account that it's in control of msg.sender submission
      */
     function addSubmission(address _accountInControl) external {
